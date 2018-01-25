@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.security.Principal;
+import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -29,7 +30,10 @@ public class ChatController {
 
     @MessageMapping("/chat.{touser}")
     public void chat(@DestinationVariable(value = "touser") String touser, Principal principal, String msg) {
-        simpMessagingTemplate.convertAndSendToUser(touser, "/queue/message", "<small>" + principal.getName() + " [" + DateUtil.now() + "]</small><br/>" + msg.replace("\n", "<br/>") + "<br/><br/>");
+        simpMessagingTemplate.convertAndSendToUser(principal.getName(), "/queue/message", "<div class=\"text-right\"><small>[" + DateUtil.now() + "]</small><br/>" + msg.replace("\n", "<br/>") + "<br/><br/></div>");
+        Arrays.stream(touser.split(",")).forEach(user ->
+                simpMessagingTemplate.convertAndSendToUser(user, "/queue/message", "<div><small>" + principal.getName() + " [" + DateUtil.now() + "]</small><br/>" + msg.replace("\n", "<br/>") + "<br/><br/></div>"));
+
     }
 
     @RequestMapping("/users")

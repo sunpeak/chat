@@ -110,8 +110,8 @@
             return;
         }
 
+        stomp.send("/chat." + user_array.toString(), {}, text);
         $.each($('input:checkbox:checked'), function () {
-            stomp.send("/chat." + $(this).val(), {}, text);
             $(this).prop("checked", false);
         });
     }
