@@ -13,7 +13,8 @@
 ### 打包
     mvn clean install
 ### 运行
-	java -jar chat-*.jar
+    自定义聊天的用户和登录密码,用户密码对使用";"间隔,用户和密码使用":"间隔
+	java -jar chat-*.jar --custom.user=aaa:111;bbb:222;ccc:333
 
 ## TODO
 * 图片，视频，表情包聊天
