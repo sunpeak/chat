@@ -30,9 +30,9 @@ public class ChatController {
 
     @MessageMapping("/chat.{touser}")
     public void chat(@DestinationVariable(value = "touser") String touser, Principal principal, String msg) {
-        simpMessagingTemplate.convertAndSendToUser(principal.getName(), "/queue/message", "<div class=\"text-right\"><small>[" + DateUtil.now() + "]</small><br/>" + msg.replace("\n", "<br/>") + "<br/><br/></div>");
+        simpMessagingTemplate.convertAndSendToUser(principal.getName(), "/queue/message", "<div class=\"text-right\"><small>TO " + touser + " [" + DateUtil.now() + "]</small><br/>" + msg.replace("\n", "<br/>") + "<br/><br/></div>");
         Arrays.stream(touser.split(",")).forEach(user ->
-                simpMessagingTemplate.convertAndSendToUser(user, "/queue/message", "<div><small>" + principal.getName() + " [" + DateUtil.now() + "]</small><br/>" + msg.replace("\n", "<br/>") + "<br/><br/></div>"));
+                simpMessagingTemplate.convertAndSendToUser(user, "/queue/message", "<div><small>FROM " + principal.getName() + " [" + DateUtil.now() + "]</small><br/>" + msg.replace("\n", "<br/>") + "<br/><br/></div>"));
 
     }
 
