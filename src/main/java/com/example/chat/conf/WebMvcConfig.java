@@ -16,7 +16,7 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {
         registry.addViewController("/").setViewName("redirect:/login");
-        registry.addViewController("/chat").setViewName("/chat");
+        registry.addViewController("/chat").setViewName("chat");
     }
 
     @Override

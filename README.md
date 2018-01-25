@@ -9,12 +9,16 @@
 ![效果图](https://raw.githubusercontent.com/sunpeak/chat/master/chat.png)
 
 ## 部署
-系统默认采用jar打包和运行，建议jdk 8。
-### 打包
-    mvn clean install
+系统默认采用jar运行和打包，运行环境建议jdk 8。
+
 ### 运行
-    自定义聊天的用户和登录密码,用户密码对使用";"间隔,用户和密码使用":"间隔
-	java -jar chat-*.jar --custom.user=aaa:111;bbb:222;ccc:333
+    https://raw.githubusercontent.com/sunpeak/chat/master/target/chat-0.0.1-SNAPSHOT.jar,可以直接下载运行
+    自定义用户和登录密码,用户密码对之间使用";"分隔,用户和密码使用":"分隔
+	java -jar chat-0.0.1-SNAPSHOT.jar --"custom.user=aaa:111;bbb:222;ccc:333"
+
+### 打包
+    如需要二次开发,则打包命令
+    mvn clean install
 
 ## TODO
 * 图片，视频，表情包聊天
