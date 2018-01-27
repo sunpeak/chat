@@ -30,10 +30,16 @@ public class ChatController {
 
     @MessageMapping("/chat.{touser}")
     public void chat(@DestinationVariable(value = "touser") String touser, Principal principal, String msg) {
-        simpMessagingTemplate.convertAndSendToUser(principal.getName(), "/queue/message", "<div class=\"text-right\"><small>TO " + touser + " [" + DateUtil.now() + "]</small><br/>" + msg.replace("\n", "<br/>") + "<br/><br/></div>");
-        Arrays.stream(touser.split(",")).forEach(user ->
-                simpMessagingTemplate.convertAndSendToUser(user, "/queue/message", "<div><small>FROM " + principal.getName() + " [" + DateUtil.now() + "]</small><br/>" + msg.replace("\n", "<br/>") + "<br/><br/></div>"));
+        if (msg.startsWith("data:image/")) {
+            Arrays.stream(touser.split(",")).forEach(user ->
+                    simpMessagingTemplate.convertAndSendToUser(user, "/queue/chat", msg));
 
+        } else {
+            simpMessagingTemplate.convertAndSendToUser(principal.getName(), "/queue/chat", "<div><small>-> " + touser + " [" + DateUtil.now() + "]</small><br/>" + msg.replace("\n", "<br/>") + "<br/><br/></div>");
+            Arrays.stream(touser.split(",")).forEach(user ->
+                    simpMessagingTemplate.convertAndSendToUser(user, "/queue/chat", "<div class=\"text-right\"><small>" + principal.getName() + " -> [" + DateUtil.now() + "]</small><br/>" + msg.replace("\n", "<br/>") + "<br/><br/></div>"));
+
+        }
     }
 
     @RequestMapping("/users")

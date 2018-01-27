@@ -1,64 +1,57 @@
 <html xmlns:th="http://www.thymeleaf.org">
-<meta charset="UTF-8"/>
 <head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
     <title>Chat</title>
     <link th:href="@{//cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css}" rel="stylesheet"/>
     <script th:src="@{//cdn.bootcss.com/sockjs-client/1.1.4/sockjs.min.js}"></script>
     <script th:src="@{//cdn.bootcss.com/stomp.js/2.3.3/stomp.min.js}"></script>
     <script th:src="@{//cdn.bootcss.com/jquery/3.2.1/jquery.min.js}"></script>
     <script th:src="@{//cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js}"></script>
-
-    <style>
-        .main-panel {
-            margin-top: 10px;
-            margin-bottom: 10px;
-        }
-    </style>
 </head>
 <body>
 <div class="container">
     <div class="row ">
-        <div class="col-md-4" style="padding: 5px">
-            <div class="main-panel panel panel-default">
+        <div class="col-md-6">
+            <div class="panel panel-default">
                 <div class="panel-heading ">
                     <div class="row ">
-                        <div class="col-md-offset-3 col-md-6 text-center">
-                            Friend
-                        </div>
-                        <div class="col-md-3">
-                            <button type="button" class="btn btn-link pull-right" style="border:0px;padding:0px"
-                                    id="logout">
-                                Logout
-                            </button>
-                        </div>
+                        <button type="button" class="btn btn-link pull-right" style="border:0px;padding:0px"
+                                id="logout">
+                            Logout
+                        </button>
+
                     </div>
                 </div>
                 <div class="panel-body">
-                    <div class="row " id="friends">
+                    <div class="form-group  col-md-12">
+                        <div class="row text-center" id="friends">
+                        </div>
+                    </div>
+                    <div class="form-group  col-md-12">
+                        <video id="video" hidden="hidden" style="width: 100%;" autoplay="true"></video>
+                        <canvas id="canvas" hidden="hidden" style="width: 100%;"></canvas>
+                        <img id="img" src=""/>
+                        <img id="img1" src=""/>
+                    </div>
+                    <div class="form-group  col-md-12">
+                        <textarea rows="3" style="width: 100%;" th:id="text"
+                                  placeholder="Input text ..."></textarea>
+                    </div>
+                    <div class="form-group  col-md-12">
+                        <p>
+                            <button type="button" class="btn btn-md btn-default" id="open">Open Video</button>
+                            <button type="button" class="btn btn-md btn-default" id="close">Close Video</button>
+                            <button type="button" id="submit" class="btn btn-md btn-default">Send Text</button>
+                        </p>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-4" style="padding: 5px">
-            <div class="main-panel panel panel-default">
-                <div class="panel-heading text-center">
-                    Chat
-                </div>
-                <div class="panel-body">
-                    <div class="form-group  col-md-12">
-                            <textarea rows="5" style="width: 100%;" th:id="text"
-                                      placeholder="input text ..."></textarea>
-                    </div>
-                    <div class="form-group  col-md-12">
-                        <button type="button" id="submit" class="btn btn-md btn-default btn-block ">Send</button>
-
-                    </div>
-                </div>
-            </div>
-
-        </div>
-        <div class="col-md-4" style="padding: 5px">
-            <div class="main-panel  panel panel-default">
+        <div class="col-md-6">
+            <div class="panel panel-default">
                 <div class="panel-heading text-center">
                     Message
                 </div>
@@ -70,14 +63,26 @@
 </div>
 
 <script th:inline="javascript">
+
     var sock = new SockJS("/endpointChat");
+
     var stomp = Stomp.over(sock);
     stomp.connect('guest', 'guest', function (frame) {
-        stomp.subscribe("/user/queue/message", handleMessage);
+        stomp.subscribe("/user/queue/chat", handleMessage);
+        stomp.subscribe("/user/queue/user", handleUser);
     });
 
     function handleMessage(message) {
-        $('#output').prepend(message.body);
+        if (message.body.indexOf("data:image/") != 0) {
+            $('#output').prepend(message.body);
+        }
+        else {
+            $('#img1').attr("src", message.body);
+        }
+    }
+
+    function handleUser(message) {
+        flushUser(message.body)
     }
 
     $('#submit').click(function (e) {
@@ -86,7 +91,18 @@
             alert("please input text")
             return
         }
-        sendSpittle(text);
+        var user_array = new Array();
+        $.each($('input:checkbox:checked'), function () {
+            user_array.push($(this).val());
+        });
+
+        if (user_array.length == 0) {
+            alert("please select friend")
+            return;
+        }
+
+        stomp.send("/chat." + user_array.toString(), {}, text);
+        $('#text').val("")
     });
 
     $('#logout').click(function (e) {
@@ -99,7 +115,55 @@
         });
     });
 
-    function sendSpittle(text) {
+
+    function flushUser(data) {
+        var user_array = new Array();
+        $.each($('input:checkbox:checked'), function () {
+            user_array.push($(this).val());
+        });
+
+        $("#friends").empty();
+        if (data) {
+            var html = "";
+            data.split(",").forEach(function (user) {
+                /*<![CDATA[*/
+                html += "<label class=\"checkbox-inline\">"
+                        + "  <input type=\"checkbox\" ";
+
+                if (user_array.indexOf(user) > -1) {
+                    html += " checked=\"true\" ";
+                }
+
+                html += " value=\"" + user + "\"/>" + user + "</label>";
+                /*]]>*/
+            })
+            $("#friends").append(html);
+        }
+    }
+
+    function queryAndFlushUser() {
+        $.ajax({
+            url: "/users",
+            type: "GET",
+            success: function (data) {
+                flushUser(data)
+            }
+        });
+    }
+
+    queryAndFlushUser()
+
+    var canvas = $('#canvas'),
+            context = canvas[0].getContext('2d'),
+            video = $('#video')[0],
+            open = $('#open'),
+            close = $('#close'),
+            mediaStreamTrack,
+            interval;
+
+    // 打开摄像头
+    open.click(function (e) {
+        /*<![CDATA[*/
         var user_array = new Array();
         $.each($('input:checkbox:checked'), function () {
             user_array.push($(this).val());
@@ -110,35 +174,40 @@
             return;
         }
 
-        stomp.send("/chat." + user_array.toString(), {}, text);
-        $.each($('input:checkbox:checked'), function () {
-            $(this).prop("checked", false);
-        });
-    }
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: false
+            }).then(function (stream) {
+                mediaStreamTrack = typeof stream.stop === 'function' ? stream : stream.getTracks()[0];
 
-    function flushusers() {
-        $.ajax({
-            url: "/users",
-            type: "GET",
-            success: function (data) {
-                $("#friends").empty();
-                if (data) {
-                    var html = "";
-                    data.split(",").forEach(function (user) {
-                        html += /*<![CDATA[*/
-                                "<label class=\"checkbox\">"
-                                + "  <div class=\"col-md-6 text-right \">"
-                                + "  <input type=\"checkbox\" value=\"" + user + "\"/></div>" + user + "<div class=\"col-md-6\"> "
-                                + "</div></label>";
-                        /*]]>*/
-                    })
-                    $("#friends").append(html);
-                }
-            }
-        });
-    }
+                video.src = (window.URL || window.webkitURL).createObjectURL(stream);
 
-    setInterval("flushusers()", 10000);
+            }).catch(function (err) {
+                alert(err);
+            })
+        }
+
+        interval = window.setInterval(function () {
+            canvas.height(video.videoHeight / video.videoWidth * canvas.width())
+            context.drawImage(video, 0, 0, canvas.width(), canvas.height())
+            var data = canvas[0].toDataURL('image/jpeg')
+            $('#img').attr("src", data);
+            stomp.send("/chat." + user_array.toString(), {}, data);
+        }, 80);
+
+        open.attr('disabled', "true");
+        close.removeAttr("disabled");
+        /*]]>*/
+    });
+
+    // 关闭摄像头
+    close.click(function (e) {
+        clearInterval(interval);
+        mediaStreamTrack.stop();
+        close.attr('disabled', "true");
+        open.removeAttr("disabled");
+    });
 
 </script>
 
