@@ -31,10 +31,9 @@
                         </div>
                     </div>
                     <div class="form-group  col-md-12">
-                        <video id="video" hidden="hidden" style="width: 100%;" autoplay="true"></video>
-                        <canvas id="canvas" hidden="hidden" style="width: 100%;"></canvas>
-                        <img id="img" src=""/>
-                        <img id="img1" src=""/>
+                        <video id="video" hidden="hidden" autoplay="true"></video>
+                        <canvas id="canvas" style="width: 100%;"></canvas>
+                        <img id="img" style="width: 100%;"/>
                     </div>
                     <div class="form-group  col-md-12">
                         <textarea rows="3" style="width: 100%;" th:id="text"
@@ -42,8 +41,9 @@
                     </div>
                     <div class="form-group  col-md-12">
                         <p>
-                            <button type="button" class="btn btn-md btn-default" id="open">Open Video</button>
-                            <button type="button" class="btn btn-md btn-default" id="close">Close Video</button>
+                            <button type="button" class="btn btn-md btn-default" data-status="close" id="open">Open
+                                Video
+                            </button>
                             <button type="button" id="submit" class="btn btn-md btn-default">Send Text</button>
                         </p>
                     </div>
@@ -77,7 +77,8 @@
             $('#output').prepend(message.body);
         }
         else {
-            $('#img1').attr("src", message.body);
+            $('#img').attr("src", message.body);
+            $('#img').css("width", "100%")
         }
     }
 
@@ -157,60 +158,59 @@
             context = canvas[0].getContext('2d'),
             video = $('#video')[0],
             open = $('#open'),
-            close = $('#close'),
             mediaStreamTrack,
             interval;
 
-    // 打开摄像头
+
     open.click(function (e) {
-        /*<![CDATA[*/
-        var user_array = new Array();
-        $.each($('input:checkbox:checked'), function () {
-            user_array.push($(this).val());
-        });
+        // 打开摄像头
+        if (open.data("status") == "close") {
+            /*<![CDATA[*/
+            var user_array = new Array();
+            $.each($('input:checkbox:checked'), function () {
+                user_array.push($(this).val());
+            });
 
-        if (user_array.length == 0) {
-            alert("please select friend")
-            return;
+            if (user_array.length == 0) {
+                alert("please select friend")
+                return;
+            }
+
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({
+                    video: true,
+                    audio: false
+                }).then(function (stream) {
+                    mediaStreamTrack = typeof stream.stop === 'function' ? stream : stream.getTracks()[0];
+
+                    video.src = (window.URL || window.webkitURL).createObjectURL(stream);
+
+                }).catch(function (err) {
+                    alert(err);
+                })
+            }
+
+            interval = window.setInterval(function () {
+                if (video.videoWidth > 0) {
+                    canvas[0].height = video.videoHeight / video.videoWidth * canvas[0].width
+                    context.drawImage(video, 0, 0, canvas[0].width, canvas[0].height)
+                    var data = canvas[0].toDataURL('image/jpeg')
+                    stomp.send("/chat." + user_array.toString(), {}, data);
+                }
+            }, 80);
+
+            open.data("status", "open")
+            open.text("Close Video")
+            /*]]>*/
         }
-
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            navigator.mediaDevices.getUserMedia({
-                video: true,
-                audio: false
-            }).then(function (stream) {
-                mediaStreamTrack = typeof stream.stop === 'function' ? stream : stream.getTracks()[0];
-
-                video.src = (window.URL || window.webkitURL).createObjectURL(stream);
-
-            }).catch(function (err) {
-                alert(err);
-            })
+        // 关闭摄像头
+        else {
+            clearInterval(interval);
+            mediaStreamTrack.stop();
+            open.data("status", "close")
+            open.text("Open Video")
         }
-
-        interval = window.setInterval(function () {
-            canvas.height(video.videoHeight / video.videoWidth * canvas.width())
-            context.drawImage(video, 0, 0, canvas.width(), canvas.height())
-            var data = canvas[0].toDataURL('image/jpeg')
-            $('#img').attr("src", data);
-            stomp.send("/chat." + user_array.toString(), {}, data);
-        }, 80);
-
-        open.attr('disabled', "true");
-        close.removeAttr("disabled");
-        /*]]>*/
     });
-
-    // 关闭摄像头
-    close.click(function (e) {
-        clearInterval(interval);
-        mediaStreamTrack.stop();
-        close.attr('disabled', "true");
-        open.removeAttr("disabled");
-    });
-
 </script>
-
-
 </body>
 </html>
